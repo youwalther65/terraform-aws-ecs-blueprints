@@ -26,6 +26,7 @@ resource "aws_codepipeline" "this" {
           version          = try(action.value.version)
           input_artifacts  = try(action.value.input_artifacts, [])
           output_artifacts = try(action.value.output_artifacts, [])
+          namespace        = try(action.value.namespace, null) 
           configuration    = try(action.value.configuration, {})
         }
       }

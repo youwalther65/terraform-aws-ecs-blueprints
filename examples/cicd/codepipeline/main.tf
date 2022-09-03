@@ -39,9 +39,9 @@ data "aws_secretsmanager_secret_version" "github_token" {
 module "codebuild_ci_app" {
   source = "../../../modules/codebuild"
 
-  name           = "codebuild-${var.service_name}-app"
+  # name           = "codebuild-${var.service_name}-app"
   service_role   = module.codebuild_ci_app.codebuild_role_arn
-  buildspec_path = var.buildspec_path
+  buildspec_file = var.buildspec_file_app
   s3_bucket      = module.codepipeline_s3_bucket
 
   environment = {
@@ -104,7 +104,7 @@ module "codepipeline_ci_cd_app" {
       input_artifacts  = ["SourceArtifact"]
       output_artifacts = ["BuildArtifact_app"]
       configuration = {
-        ProjectName = module.codebuild_ci_app.project_id
+        ProjectName = module.codebuild_ci_app.project_id["app_build"]
       }
     }],
   }]
@@ -118,9 +118,9 @@ module "codepipeline_ci_cd_app" {
 module "codebuild_ci_infra" {
   source = "../../../modules/codebuild"
 
-  name           = "codebuild-${var.service_name}-infra"
+  # name           = "codebuild-${var.service_name}-infra"
   service_role   = module.codebuild_ci_infra.codebuild_role_arn
-  buildspec_path = var.buildspec_path
+  buildspec_file = var.buildspec_file_tf
   s3_bucket      = module.codepipeline_s3_bucket
 
   environment = {
@@ -176,28 +176,84 @@ module "codepipeline_ci_cd_infra" {
       }
     }],
     }, {
-    name = "Terraform_Stages"
+    name = "Terraform_tflint"
     action = [{
-      run_order        = "1"
-      name             = "Terraform_Plan"
+      name             = "${var.infra_repository_name}-TF_Tflint"
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
       version          = "1"
       input_artifacts  = ["SourceArtifact"]
+      output_artifacts = ["tflint"]
+      namespace        = "TFLINT"
       configuration = {
-        ProjectName = module.codebuild_ci_infra.project_id
+        ProjectName = module.codebuild_ci_infra.project_id["terraform_tflint"]
+      }
+    }],
+    }, {
+    name = "Terraform_checkov"
+    action = [{
+      run_order        = "1"
+      name             = "${var.infra_repository_name}-TF_Checkov"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["SourceArtifact"]
+      output_artifacts = ["checkov"]
+      namespace        = "CHECKOV"
+      configuration = {
+        ProjectName = module.codebuild_ci_infra.project_id["terraform_checkov"]
       }
     }, {
       run_order        = "2"
-      name             = "Terraform_Apply"
+      name             = "${var.infra_repository_name}-TF_Checkov_Approval"
+      category         = "Approval"
+      owner            = "AWS"
+      provider         = "Manual"
+      version          = "1"
+      configuration = {
+        CustomData         = "checkov: #{CHECKOV.failures}, #{CHECKOV.tests}"
+        ExternalEntityLink = "#{CHECKOV.review_link}"
+      }
+    }],
+    }, {
+    name = "Terraform_Build"
+    action = [{
+      run_order        = "1"
+      name             = "${var.infra_repository_name}-TF_Plan"
       category         = "Build"
       owner            = "AWS"
       provider         = "CodeBuild"
       version          = "1"
       input_artifacts  = ["SourceArtifact"]
+      output_artifacts = ["plan"]
+      namespace        = "TF"
       configuration = {
-        ProjectName = module.codebuild_ci_infra.project_id
+        ProjectName = module.codebuild_ci_infra.project_id["terraform_plan"]
+      }
+    }, {
+      run_order        = "2"
+      name             = "${var.infra_repository_name}-TF_Apply_Approval"
+      category         = "Approval"
+      owner            = "AWS"
+      provider         = "Manual"
+      version          = "1"
+      configuration = {
+        CustomData         = "Please review and approve the terraform plan"
+        ExternalEntityLink = "https://#{TF.pipeline_region}.console.aws.amazon.com/codesuite/codebuild/${data.aws_caller_identity.current.account_id}/projects/#{TF.build_id}/build/#{TF.build_id}%3A#{TF.build_tag}/?region=#{TF.pipeline_region}"
+      }
+    }, {
+      run_order        = "3"
+      name             = "${var.infra_repository_name}-TF_Apply"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      version          = "1"
+      input_artifacts  = ["plan"]
+      output_artifacts = ["apply"]
+      configuration = {
+        ProjectName = module.codebuild_ci_infra.project_id["terraform_apply"]
       }
     }],
   }]
@@ -233,8 +289,7 @@ module "codepipeline_s3_bucket" {
   bucket = "codepipeline-${var.aws_region}-${random_id.app.hex}"
   acl    = "private"
 
-  # For example only - please re-evaluate for your environment
-  force_destroy = true
+  force_destroy = true // for demo purposes only
 
   attach_deny_insecure_transport_policy = true
   attach_require_latest_tls_policy      = true

@@ -1,4 +1,4 @@
-# ECS load-balanced service
+# CI/CD with CodePipeline and Terraform
 
 This solution blueprint creates a web-facing load balanced ECS service. There are two steps to deploying this service:
 
@@ -13,36 +13,22 @@ This solution blueprint creates a web-facing load balanced ECS service. There ar
   * Again, once this is created, you will not have to complete these steps for the other examples.  
 * Now you can deploy this blueprint
 ```shell
-terraform init
-terraform plan
-terraform apply -auto-approve
+terraform init -backend-config="key=${TEAM}/${ENV}-
+${TARGET_DEPLOYMENT_SCOPE}/terraform.tfstate" -backend-config="region=$AWS_REGION"
+-backend-config="bucket=${TF_BACKEND_CONFIG_PREFIX}-${ENV}" 
+-backend-config="dynamodb_table=${TF_BACKEND_CONFIG_PREFIX}-lock-${ENV}"
+-backend-config="encrypt=true"
 ```
 
 <p align="center">
   <img src="../../docs/lb-service.png"/>
 </p>
 
-The solution has following key components:
-
-* ALB: We are using Application Load Balancer for this service. Note the following key attributes for ALB:
-    * ALB security group - allows ingress from any IP address to port 80 and allows all egress
-    * ALB subnet - ALB is created in a public subnet
-    * Listener - listens on port 80 for protocol HTTP
-    * Target group - Since we are using Fargate launch type, the targe type is IP since each task in Fargate gets its own ENI and IP address. The target group has container port (3000) and protocol (HTTP) where the application container will serve requests. The ALB runs health check against all registered targets. In this example, ALB send HTTP GET request to path "/" to container port 3000. We are using target group default health check settings. You can tune these settings to adjust the time interval and frequency of health checks. It impacts how fast tasks become available to serve traffic. (See [ALB target health check documentation](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html) to learn more.)
-* ECR registery for the container image. We are using only one container image for the task in this example.
-* ECS service definition:
-    * Task security group: allows ingress for TCP from the ALB security group to the container service port (3000 for this example). And allows all egress.
-    * Service discovery: You can register the service to AWS Cloud Map registry. You just need to provide the `namespace` but make sure the namespace is created in the `core-infra` step.
-    * Tasks for this service will be deployed in private subnet
-    * Service definition takes the load balancer target group created above as input.
-    * Task definition consisting of task vCPU size, task memory, and container information including the above created ECR repository URL.
-    * Task definition also takes the task execution role ARN which is used by ECS agent to fetch ECR images and send logs to AWS CloudWatch on behalf of the task.
-* (Optional) Scheduled autoscaling: The blueprint also includes settings for scheduled autoscaling. Let us say you expect your application to have higher load during business hours (say 8am-5pm), and low load outside of it. You can configure the service to scale up, that is, increase the number of tasks behind the service say at 7:45am; and configure to scale down at say 5:15pm. You can configure the desired count for the high load and low load situation. And you can provide the time to scale up and down using simple cron syntax.
-
-The second half of `main.tf` focuses on creating the CI/CD pipeline using AWS CodePipeline and CodeBuild. This has following main components:
+The `main.tf` focuses on creating the CI/CD pipeline using AWS CodePipeline and CodeBuild. This has following main components:
 
 * **Please make sure you have stored the Github access token in AWS Secrets Manager as a plain text secret (not as key-value pair secret). This token is used to access the *application-code* repository and build images.**
-* S3 bucket to store CodePipeline assets. The bucket is encrypted with AWS managed key.
+* S3 bucket to store CodePipeline assets and Terraform State. The bucket is encrypted with AWS managed key.
+* DynamoDB table for Terraform lock
 * SNS topic for notifications from the pipeline
 * CodeBuild for building container images
     * Needs the S3 bucket created above

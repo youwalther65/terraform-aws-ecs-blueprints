@@ -50,10 +50,11 @@ variable "ecs_task_execution_role_name" {
 }
 
 # Application variables
-variable "buildspec_path" {
-  description = "The location of the buildspec file"
-  type        = string
-  default     = "./application-code/ecsdemo-frontend/templates/buildspec.yml"
+variable "buildspec_file_app" {
+  description   = "The location of the buildspec file"
+  default       = {
+    "app_build" = "buildspec.yml"
+  }
 }
 
 variable "app_folder_path" {
@@ -125,3 +126,18 @@ variable "tf_version" {
   type = string
   default = "1.2.8"
 }
+
+variable "buildspec_file_tf" {
+  description = "Build spec file name for the pipeline"
+  default = {
+    "terraform_plan"    = "buildspec-tf-plan.yml",
+    "terraform_apply"   = "buildspec-tf-apply.yml",
+    "terraform_checkov" = "buildspec-tf-checkov.yml",
+    "terraform_tflint"  = "buildspec-tf-tflint.yml"
+  }
+}
+
+# variable "namespace" {
+#   description = "Codepipeline Namespace for Environment mapping"
+#   type = string
+# }

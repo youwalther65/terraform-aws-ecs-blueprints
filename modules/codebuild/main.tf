@@ -1,8 +1,9 @@
 data "aws_partition" "current" {}
 
 resource "aws_codebuild_project" "this" {
-  name          = var.name
-  description   = var.description
+  for_each      = toset(keys(var.buildspec_file))
+  name          = each.key
+  description   = "${each.key}_codebuild_project"
   build_timeout = var.build_timeout
   service_role  = var.service_role
 
@@ -61,7 +62,7 @@ resource "aws_codebuild_project" "this" {
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = var.buildspec_path
+    buildspec = file("${var.buildspec_file[each.key]}")
   }
 
   tags = var.tags

@@ -1,7 +1,7 @@
-variable "name" {
-  description = "CodeBuild Project name"
-  type        = string
-}
+# variable "name" {
+#   description = "CodeBuild Project name"
+#   type        = string
+# }
 
 variable "description" {
   description = "Short description of the project"
@@ -34,9 +34,9 @@ variable "logs_config" {
   default     = {}
 }
 
-variable "buildspec_path" {
-  description = "Path to for the Buildspec file"
-  type        = string
+variable "buildspec_file" {
+  description = "Buildspec file for the pipeline"
+  default     = {}
 }
 
 variable "tags" {
