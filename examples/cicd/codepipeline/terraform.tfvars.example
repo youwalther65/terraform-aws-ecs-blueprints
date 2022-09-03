@@ -1,0 +1,20 @@
+# You should update the below variables
+
+# aws_region from the core-infra example
+aws_region      = "us-west-2"
+
+
+#The AWS Secrets Manager secret name containing the plaintext Github access token
+github_token_secret_name = "ecs-github-token"
+app_repository_owner     = "aws-ia"
+app_repository_name      = "terraform-aws-ecs-blueprints"
+app_repository_branch    = "refactor/cicd"
+infra_repository_name      = "terraform-aws-ecs-blueprints"
+infra_repository_owner   = "aws-ia"
+infra_repository_branch  = "refactor/cicd"
+
+# It is optional to change the below variables
+# core_stack_name is also same as ecs_cluster_name from core-infra
+core_stack_name      = "ecs-blueprint-infra"
+service_name         = "ecsdemo-frontend"
+container_name       = "ecsdemo-frontend"

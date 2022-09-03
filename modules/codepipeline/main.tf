@@ -18,6 +18,7 @@ resource "aws_codepipeline" "this" {
         for_each = try(stage.value.action, [])
 
         content {
+          run_order        = try(action.value.run_order, null)
           name             = action.value.name
           category         = action.value.category
           owner            = action.value.owner
