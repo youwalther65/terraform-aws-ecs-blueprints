@@ -170,7 +170,8 @@ data "aws_iam_policy_document" "this" {
     sid    = "CodebuildReports"
     effect = "Allow"
     actions = [
-      "codebuild:CreateReportGroup"
+      "codebuild:CreateReportGroup",
+      "codebuild:CreateReport"
     ]
     resources = ["*"]
   }

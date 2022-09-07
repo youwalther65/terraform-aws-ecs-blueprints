@@ -27,4 +27,5 @@ reports:
   checkov-report-group:
     files:
       - 'checkov.xml'
+    base-directory: 'examples/lb-service'
     file-format: "JUNITXML"
