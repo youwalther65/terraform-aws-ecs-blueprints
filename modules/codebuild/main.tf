@@ -167,6 +167,14 @@ data "aws_iam_policy_document" "this" {
     resources = ["*"]
   }
   statement {
+    sid    = "CodebuildReports"
+    effect = "Allow"
+    actions = [
+      "codebuild:CreateReportGroup"
+    ]
+    resources = ["*"]
+  }
+  statement {
     sid    = "AllowCloudWatchActions"
     effect = "Allow"
     actions = [
