@@ -176,22 +176,37 @@ module "codepipeline_ci_cd_infra" {
       }
     }],
     }, {
-    name = "Terraform_tflint"
-    action = [{
-      name             = "${var.infra_repository_name}-TF_Tflint"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      version          = "1"
-      input_artifacts  = ["SourceArtifact"]
-      output_artifacts = ["tflint"]
-      namespace        = "TFLINT"
-      configuration = {
-        ProjectName = module.codebuild_ci_infra.project_id["terraform_tflint"]
-      }
-    }],
-    }, {
-    name = "Terraform_checkov"
+    # name = "Terraform_TFlint"
+    # action = [{
+    #   name             = "${var.infra_repository_name}-TF_Tflint"
+    #   category         = "Build"
+    #   owner            = "AWS"
+    #   provider         = "CodeBuild"
+    #   version          = "1"
+    #   input_artifacts  = ["SourceArtifact"]
+    #   output_artifacts = ["tflint"]
+    #   namespace        = "TFLINT"
+    #   configuration = {
+    #     ProjectName = module.codebuild_ci_infra.project_id["terraform_tflint"]
+    #     EnvironmentVariables = jsonencode([
+    #       {
+    #         name  = "TF_BACKEND_CONFIG_PREFIX",
+    #         value = var.tf_backend_config_prefix,
+    #         type  = "PLAINTEXT"
+    #       }, {
+    #         name  = "ENV",
+    #         value = var.env,
+    #         type  = "PLAINTEXT"
+    #       }, {
+    #         name  = "TEAM",
+    #         value = var.team,
+    #         type  = "PLAINTEXT"
+    #       }
+    #     ])
+    #   }
+    # }],
+    # }, {
+    name = "Terraform_Checkov"
     action = [{
       run_order        = "1"
       name             = "${var.infra_repository_name}-TF_Checkov"

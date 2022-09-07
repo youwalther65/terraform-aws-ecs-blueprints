@@ -3,6 +3,14 @@ variable "aws_region" {
   type        = string
 }
 
+variable "env" {
+  description = "Environment name"
+}
+
+variable "team" {
+  description = "Deployment team"
+}
+
 variable "core_stack_name" {
   description = "The name of core infrastructure stack that you created using core-infra module"
   type        = string
@@ -137,7 +145,6 @@ variable "buildspec_file_tf" {
   }
 }
 
-# variable "namespace" {
-#   description = "Codepipeline Namespace for Environment mapping"
-#   type = string
-# }
+variable "tf_backend_config_prefix" {
+  description = "A name to prefix the s3 bucket for terraform state files and the dyanamodb table for terraform state locks for backend config"
+}

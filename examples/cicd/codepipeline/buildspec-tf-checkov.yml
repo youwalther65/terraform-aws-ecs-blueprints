@@ -15,7 +15,7 @@ phases:
   build:
     commands:
       - echo "Starting checkov static analysis"
-      - cd "${CODEBUILD_SRC_DIR}"
+      - cd "${CODEBUILD_SRC_DIR}/examples/lb-service"
       - checkov --soft-fail -d . --output junitxml | tee checkov.xml
       - export failures=$(xmllint --xpath '//testsuites/@failures' checkov.xml)
       - export tests=$(xmllint --xpath '//testsuites/@tests' checkov.xml)

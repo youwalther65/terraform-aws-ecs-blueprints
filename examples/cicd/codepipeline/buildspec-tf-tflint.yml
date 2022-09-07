@@ -3,7 +3,7 @@ env:
   variables:
     TFLINT_VERSION: "0.34.1"
     TFLINT_OS: "amd64"
-    TERRAFORM_VERSION: 1.0.7
+    TERRAFORM_VERSION: 1.2.5
   exported-variables:
     - ENV
     - TARGET_DEPLOYMENT_SCOPE
@@ -38,13 +38,7 @@ phases:
       - cat .tflint.hcl
       - ./tflint --init
       - cd "${CODEBUILD_SRC_DIR}"
-      - export TAG=$(cat tag.txt)
-      - export ENV=$(echo $TAG | cut -d/ -f1 | cut -d_ -f1)
-      - export TARGET_DEPLOYMENT_SCOPE=$(echo $TAG | cut -d/ -f1 | cut -d_ -f2)
-      - export TEAM=$(echo $TAG | cut -d/ -f2)
-      - export TARGET_MODULE=$(if [[ ${TARGET_DEPLOYMENT_SCOPE} == *"global"* ]];then echo "module.global"; else echo "module.regional"; fi)
-      - export REGION=$(if [[ ${TARGET_DEPLOYMENT_SCOPE} == *"global"* ]];then echo "${GLOBAL_RESOURCE_DEPLOY_FROM_REGION}"; else echo "${TARGET_DEPLOYMENT_SCOPE}"; fi)
-      - export REGION_TFVARS=$([ -s "environments/${ENV}/{TEAM}/${REGION}.tfvars" ] && echo "-var-file \"environments/${ENV}/${TEAM}/${REGION}.tfvars\"" || echo "")
+      - export TFVARS=$([ -s "environments/${ENV}/{TEAM}/terraform.tfvars" ] && echo "-var-file \"environments/${ENV}/${TEAM}/${REGION}.tfvars\"" || echo "")
       - echo "ENV=${ENV}"
       - echo "TEAM=${TEAM}"
       - echo "TARGET_DEPLOYMENT_SCOPE=${TARGET_DEPLOYMENT_SCOPE}"
