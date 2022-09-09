@@ -33,6 +33,83 @@ data "aws_secretsmanager_secret_version" "github_token" {
 }
 
 ################################################################################
+# EventBridge Pipeline Trigger
+################################################################################
+
+resource "aws_cloudwatch_event_rule" "trigger_pipeline_on_push" {
+  name        = "trigger_codepipeline_on_${var.container_name}_push"
+  description = "Trigger codepipeline on ${var.container_name} repo push"
+
+  event_pattern = <<EOF
+{
+  "source": [
+    "aws.ecr"
+  ],
+  "detail-type": [
+    "ECR Image Action"
+  ],
+  "detail": {
+    "action-type": [
+      "PUSH"
+    ],
+    "repository-name": [
+      "${var.container_name}"
+    ],
+    "result": [
+      "SUCCESS"
+    ]
+  }
+}
+EOF
+}
+
+resource "aws_cloudwatch_event_target" "codepipeline" {
+  rule      = aws_cloudwatch_event_rule.trigger_pipeline_on_push.name
+  target_id = "SendToCodePipeline"
+  arn       = module.codepipeline_ci_cd_infra.codepipeline_arn
+  role_arn  = aws_iam_role.cloudwatch_event_role.arn
+}
+
+resource "aws_iam_role" "cloudwatch_event_role" {
+  name               = "${var.container_name}-eventbridge"
+  assume_role_policy = data.aws_iam_policy_document.eventbridge.json
+}
+
+data "aws_iam_policy_document" "eventbridge" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "eventbridge" {
+  name   = "${var.container_name}-eventbridge"
+  role   = aws_iam_role.cloudwatch_event_role.id
+  policy = data.aws_iam_policy_document.this.json
+}
+
+data "aws_iam_policy_document" "this" {
+  statement {
+    sid    = "StartPipeline"
+    effect = "Allow"
+    actions = [
+      "codepipeline:StartPipelineExecution"
+    ]
+    resources = [module.codepipeline_ci_cd_infra.codepipeline_arn]
+  }
+  # statement {
+  #   sid    = "StartBuild"
+  #   effect = "Allow"
+  #   actions = [
+  #     "codebuild:StartBuild"
+  #   ]
+  #   resources = [module.codebuild_ci_infra.codebuild_role_arn] //Verify
+  # }
+}
+################################################################################
 # CodePipeline and CodeBuild for CI/CD
 ################################################################################
 
@@ -51,11 +128,17 @@ module "codebuild_ci_app" {
         name  = "REPO_URL"
         value = module.container_image_ecr.repository_url
         }, {
+        name  = "CONTAINER_NAME"
+        value = var.container_name
+        }, {
         name  = "FOLDER_PATH"
         value = var.app_folder_path
         }, {
         name  = "ECS_EXEC_ROLE_ARN"
         value = data.aws_iam_role.ecs_core_infra_exec_role.arn
+        }, {
+        name  = "BACKEND_SVC_ENDPOINT"
+        value = var.backend_svc_endpoint
       },
     ]
   }
@@ -127,17 +210,20 @@ module "codebuild_ci_infra" {
     privileged_mode = true
     environment_variables = [
       {
+        name  = "AWS_REGION"
+        value = var.aws_region
+        }, {
         name  = "TF_VERSION"
         value = var.tf_version
         }, {
         name  = "TF_ENV"
         value = var.infra_folder_path
         }, {
-        name  = "TF_ACTION"
-        value = "apply"
+        name  = "TEAM"
+        value = var.team
         }, {
-        name  = "TF_LOG"
-        value = "DEBUG"
+        name  = "ENV"
+        value = var.env
       },
     ]
   }
@@ -176,36 +262,6 @@ module "codepipeline_ci_cd_infra" {
       }
     }],
     }, {
-    # name = "Terraform_TFlint"
-    # action = [{
-    #   name             = "${var.infra_repository_name}-TF_Tflint"
-    #   category         = "Build"
-    #   owner            = "AWS"
-    #   provider         = "CodeBuild"
-    #   version          = "1"
-    #   input_artifacts  = ["SourceArtifact"]
-    #   output_artifacts = ["tflint"]
-    #   namespace        = "TFLINT"
-    #   configuration = {
-    #     ProjectName = module.codebuild_ci_infra.project_id["terraform_tflint"]
-    #     EnvironmentVariables = jsonencode([
-    #       {
-    #         name  = "TF_BACKEND_CONFIG_PREFIX",
-    #         value = var.tf_backend_config_prefix,
-    #         type  = "PLAINTEXT"
-    #       }, {
-    #         name  = "ENV",
-    #         value = var.env,
-    #         type  = "PLAINTEXT"
-    #       }, {
-    #         name  = "TEAM",
-    #         value = var.team,
-    #         type  = "PLAINTEXT"
-    #       }
-    #     ])
-    #   }
-    # }],
-    # }, {
     name = "Terraform_Checkov"
     action = [{
       run_order        = "1"
@@ -219,6 +275,13 @@ module "codepipeline_ci_cd_infra" {
       namespace        = "CHECKOV"
       configuration = {
         ProjectName = module.codebuild_ci_infra.project_id["terraform_checkov"]
+        EnvironmentVariables = jsonencode([
+          {
+            name  = "ACCOUNT",
+            value = data.aws_caller_identity.current.account_id,
+            type  = "PLAINTEXT"
+          }
+        ])
       }
     }, {
       run_order        = "2"

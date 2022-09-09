@@ -3,7 +3,7 @@ env:
   variables:
     TFLINT_VERSION: "0.34.1"
     TFLINT_OS: "amd64"
-    TERRAFORM_VERSION: 1.2.5
+    TERRAFORM_VERSION: 1.2.8
   exported-variables:
     - ENV
     - TARGET_DEPLOYMENT_SCOPE

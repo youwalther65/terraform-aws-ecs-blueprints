@@ -171,7 +171,9 @@ data "aws_iam_policy_document" "this" {
     effect = "Allow"
     actions = [
       "codebuild:CreateReportGroup",
-      "codebuild:CreateReport"
+      "codebuild:CreateReport",
+      "codebuild:UpdateReport",
+      "codebuild:BatchPutTestCases"
     ]
     resources = ["*"]
   }

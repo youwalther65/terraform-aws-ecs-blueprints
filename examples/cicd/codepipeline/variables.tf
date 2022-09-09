@@ -129,6 +129,12 @@ variable "container_name" {
   default     = "ecsdemo-frontend"
 }
 
+variable "backend_svc_endpoint" {
+  description = "The FQDN DNS name of the backend service"
+  type        = string
+  default     = ""
+}
+
 variable "tf_version" {
   description = "Terraform Version for infrastructure deployment"
   type = string
