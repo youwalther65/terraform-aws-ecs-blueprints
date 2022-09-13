@@ -24,7 +24,7 @@ phases:
       - terraform init -backend-config="key=${TEAM}/${ENV}/terraform.tfstate" -backend-config="region=$AWS_REGION" -backend-config="bucket=${TF_BACKEND_CONFIG_PREFIX}-${ENV}" -backend-config="dynamodb_table=${TF_BACKEND_CONFIG_PREFIX}-lock-${ENV}" -backend-config="encrypt=true"
       - terraform fmt
       - terraform validate -no-color
-      - echo "terraform plan -var-file "terraform.tfvars.example" -out=tfplan"
+      - echo "terraform plan -var-file "terraform.tfvars.example" -var "repository_owner=aws-ia" -out=tfplan"
       - terraform plan -var-file "terraform.tfvars.example" -out=tfplan -out=tfplan -compact-warnings
 
   post_build:
