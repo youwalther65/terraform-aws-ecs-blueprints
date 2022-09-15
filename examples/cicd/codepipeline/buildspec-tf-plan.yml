@@ -25,7 +25,7 @@ phases:
       - terraform fmt
       - terraform validate -no-color
       - echo "terraform plan -var-file "terraform.tfvars.example" -var "repository_owner=aws-ia" -out=tfplan"
-      - terraform plan -var-file "terraform.tfvars.example" -out=tfplan -out=tfplan -compact-warnings
+      - terraform plan -var-file "terraform.tfvars.example" -var "repository_owner=aws-ia" -out=tfplan -compact-warnings
 
   post_build:
     commands:
