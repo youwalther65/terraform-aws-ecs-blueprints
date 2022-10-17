@@ -1,0 +1,65 @@
+# You should update the below variables
+
+# aws_region from the core-infra example
+aws_region = "us-west-2"
+
+
+# It is optional to change the below variables
+# core_stack_name is also same as ecs_cluster_name
+core_stack_name = "ecs-blueprint-infra"
+
+namespace       = "default"
+
+task_cpu        = 1024
+task_memory     = 2048
+
+# deployments
+deployment_tags = {
+  "app" = "ecsdemo-frontend"
+}
+desired_count = 3
+task_tags = {
+  "app" = "ecsdemo-frontend"
+}
+main_app_container_definition = {
+  "container_name" = "ecsdemo-frontend",
+  "container_image" = "022457860714.dkr.ecr.us-west-2.amazonaws.com/ecsdemo-frontend:a4f0cce",
+  "port_mappings" = [
+    {
+      "containerPort" = 3000,
+      "protocol" = "TCP"
+    }
+  ],
+  "map_environment" = {
+    "CRYSTAL_URL" = "http://ecsdemo-crystal.default.svc.cluster.local/crystal"
+  },
+  "map_secrets" = {
+    "NODEJS_URL" = "/backend-cfgmap/nodejs_url"
+  }
+}
+sidecar_container_definitions = []
+deployment_minimum_healthy_percent = 75
+deployment_maximum_percent = 125
+# services
+service_tags = {
+  "app" = "ecsdemo-frontend"
+}
+service_type = "LoadBalancer"
+lb_ports = [
+  {
+    "listener_port" = 80,
+    "protocol" = "HTTP",
+    "target_port" = 3000
+  }
+]
+# pods
+# configmaps
+ssm_parameters = [
+  {
+    "config_name" = "/backend-cfgmap/nodejs_url",
+    "config_value" = "http://ecsdemo-nodejs.default.svc.cluster.local/"
+  }
+]
+# secrets
+ssm_secrets = []
+service_name = "ecsdemo-frontend-k8s"
